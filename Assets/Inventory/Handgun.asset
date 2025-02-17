@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eab444e6ff268734b842d210d4b82061, type: 3}
+  m_Name: Handgun
+  m_EditorClassIdentifier: 
+  itemID: Handgun_01
+  itemIcon: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+  itemName: Handgun
+  itemDescription: A Handgun
+  usable: 0
+  currentStackSize: 0
+  MaxStackSize: 5
+  itemSize: {x: 2, y: 1}
+  rarity: Common
+  att1: 0
+  att1_icon: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}

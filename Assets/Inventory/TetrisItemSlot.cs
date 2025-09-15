@@ -22,8 +22,9 @@ public class TetrisItemSlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IE
 
     void Start()
     {
+
         #region Rescaling
-  
+
         GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, item.itemSize.y * size.y);
         GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, item.itemSize.x * size.x);
 
@@ -54,15 +55,15 @@ public class TetrisItemSlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IE
         string rarity = eventData.pointerCurrentRaycast.gameObject.GetComponentInParent<TetrisItemSlot>().item.rarity;
         Functionalities descript = FindObjectOfType<Functionalities>();
 
-        descript.changeDescription(title,body,attributte1,rarity,icon_attribute);
-        
+        descript.changeDescription(title, body, attributte1, rarity, icon_attribute);
+
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
         Functionalities descript = FindObjectOfType<Functionalities>();
 
-        descript.changeDescription("", "", 0,"");
+        descript.changeDescription("", "", 0, "");
 
     }
 
@@ -77,12 +78,12 @@ public class TetrisItemSlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IE
     {
         transform.position = eventData.position;
         //allow the intersection between old pos and new pos.
-        for (int i = 0; i < item.itemSize.y; i++) 
+        for (int i = 0; i < item.itemSize.y; i++)
         {
-            for (int j = 0; j < item.itemSize.x; j++) 
+            for (int j = 0; j < item.itemSize.x; j++)
             {
-                slots.grid[(int)startPosition.x + j, (int)startPosition.y + i] = 0; 
-                                                                                    
+                slots.grid[(int)startPosition.x + j, (int)startPosition.y + i] = 0;
+
             }
         }
 
@@ -104,7 +105,7 @@ public class TetrisItemSlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IE
                 List<Vector2> newPosItem = new List<Vector2>(); //new item position in bag
                 bool fit = false;
 
-                for (int sizeY = 0; sizeY < item.itemSize.y; sizeY++) 
+                for (int sizeY = 0; sizeY < item.itemSize.y; sizeY++)
                 {
                     for (int sizeX = 0; sizeX < item.itemSize.x; sizeX++)
                     {
@@ -137,7 +138,7 @@ public class TetrisItemSlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IE
                         for (int j = 0; j < item.itemSize.x; j++) //through item X
                         {
                             slots.grid[(int)startPosition.x + j, (int)startPosition.y + i] = 0; //clean old pos
-                                                                                                
+
                         }
                     }
 
@@ -164,10 +165,11 @@ public class TetrisItemSlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IE
             }
             else
             { // out of index, back to the old pos
-                this.transform.GetComponent<RectTransform>().anchoredPosition = oldPosition; 
+                this.transform.GetComponent<RectTransform>().anchoredPosition = oldPosition;
             }
         }
-        else {
+        else
+        {
 
             PlayerController player;
             player = FindObjectOfType<PlayerController>();
@@ -175,17 +177,18 @@ public class TetrisItemSlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IE
             TetrisListItens itenInGame; // list of items prefab to could be instantiated when dropping item.
             itenInGame = FindObjectOfType<TetrisListItens>();
 
-            for(int t =0; t < itenInGame.prefabs.Length; t++)
+            for (int t = 0; t < itenInGame.prefabs.Length; t++)
             {
-                if (itenInGame.itens[t].itemName == item.itemName) {
-                    Instantiate(itenInGame.prefabs[t].gameObject, new Vector2(player.transform.position.x + Random.Range(-1.5f,1.5f), player.transform.position.y + Random.Range(-1.5f, 1.5f)), Quaternion.identity); //dropa o item
+                if (itenInGame.itens[t].itemName == item.itemName)
+                {
+                    Instantiate(itenInGame.prefabs[t].gameObject, new Vector2(player.transform.position.x + Random.Range(-1.5f, 1.5f), player.transform.position.y + Random.Range(-1.5f, 1.5f)), Quaternion.identity); //dropa o item
 
-                    Destroy(this.gameObject); 
+                    Destroy(this.gameObject);
                     break;
                 }
 
             }
-            
+
         }
         GetComponent<CanvasGroup>().blocksRaycasts = true; //register hit on item again
     }
@@ -204,6 +207,22 @@ public class TetrisItemSlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IE
             }
 
             Destroy(this.gameObject); //item drop
+            Functionalities descript = FindObjectOfType<Functionalities>();
+
+            descript.changeDescription("", "", 0, "");//clean description
+        }
+
+        if (item.equipable)
+        {
+            item.Use();
+            for (int i = 0; i < item.itemSize.y; i++) //through Y size of item
+            {
+                for (int j = 0; j < item.itemSize.x; j++) //through X size of item
+                {
+                    slots.grid[(int)startPosition.x + j, (int)startPosition.y + i] = 0; //clean the old item position                                                                   
+                }
+            }
+
             Functionalities descript = FindObjectOfType<Functionalities>();
 
             descript.changeDescription("", "", 0, "");//clean description

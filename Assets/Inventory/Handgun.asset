@@ -17,6 +17,7 @@ MonoBehaviour:
   itemName: Handgun
   itemDescription: A Handgun
   usable: 0
+  equipable: 1
   currentStackSize: 0
   MaxStackSize: 5
   itemSize: {x: 2, y: 1}

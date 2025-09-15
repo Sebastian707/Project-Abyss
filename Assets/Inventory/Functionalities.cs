@@ -19,7 +19,6 @@ public class Functionalities : MonoBehaviour //inventoryTab
     public Text itemBody;
     public Text atributte1;
     public Image image_atributte1;
-    public Text itemRarity;
 
     float timeUntilClose=0.5f;
     float startTime = 0;
@@ -33,7 +32,7 @@ public class Functionalities : MonoBehaviour //inventoryTab
         itemTitle.text = "";
         itemBody.text = "";
         atributte1.text = "";
-        itemRarity.text = "";
+
 
         startPos = new Vector2(1153f, -275f);
         finalPos = new Vector2(400f, 225f);
@@ -65,12 +64,12 @@ public class Functionalities : MonoBehaviour //inventoryTab
         }
     }
 
+
     //This function is called when the mouses passes through an item in the inventory
     public void changeDescription(string title, string body, int att1 = 0, string rarity = "",Sprite icon1 = null)
     {
         itemTitle.text = title;
         itemBody.text = body;
-        itemRarity.text = rarity;
 
         if (att1 > 0)
             atributte1.text = "+" + att1.ToString();

@@ -16,6 +16,7 @@ public class TetrisItem : ScriptableObject
     public string itemName;
     public string itemDescription;
     public bool usable;
+    public bool equipable;
     public int currentStackSize;
     public int MaxStackSize;
     public Vector2 itemSize; //x and y

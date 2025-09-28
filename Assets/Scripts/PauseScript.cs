@@ -8,6 +8,13 @@ public class PauseScript : MonoBehaviour
     public PlayerController playerController;
     public KeyCode pauseKey = KeyCode.Escape;
 
+
+    private void Start()
+    {
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
     private void Awake()
     {
         pauseScreen.SetActive(false); 

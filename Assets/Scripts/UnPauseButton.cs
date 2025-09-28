@@ -24,8 +24,8 @@ public class UnpauseButtonScript : MonoBehaviour
         Time.timeScale = 1;
         pauseScreen.SetActive(false);
         playerController.EnableMovement();
-        //Cursor.lockState = CursorLockMode.Locked;
-        //Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
 
     }
 

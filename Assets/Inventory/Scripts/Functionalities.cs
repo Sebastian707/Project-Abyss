@@ -3,14 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-
 public class Functionalities : MonoBehaviour //inventoryTab
 {
-    //script to open inventory and display description.
-
-    [Header ("Inventory Openning")] 
+    [Header("Inventory Opening")]
     public GameObject inventoryTab;
-    private float starPosChangerY;
     private Vector2 finalPos;
     private Vector2 startPos;
 
@@ -20,53 +16,70 @@ public class Functionalities : MonoBehaviour //inventoryTab
     public Text atributte1;
     public Image image_atributte1;
 
-    float timeUntilClose=0.5f;
-    float startTime = 0;
-    float currentTime;
+    [Header("Player Reference")]
+    public PlayerController playerController; // reference to disable/enable movement
+
     bool active = false;
 
     private void Start()
     {
-        //clean description
+        // clean description
         image_atributte1.enabled = false;
         itemTitle.text = "";
         itemBody.text = "";
         atributte1.text = "";
 
-
         startPos = new Vector2(1153f, -275f);
         finalPos = new Vector2(400f, 225f);
-        starPosChangerY = 15f;
         inventoryTab.GetComponent<RectTransform>().anchoredPosition = startPos;
     }
 
-    // Update is called once per frame
-    void FixedUpdate()
+    private void Update()
     {
-        //open inventory using key I, and dont let open it so fast
-        if (Input.GetKey(KeyCode.I) && currentTime >= timeUntilClose)
+        // toggle inventory using key I
+        if (Input.GetKeyDown(KeyCode.I))
         {
-            currentTime = startTime;
             if (active)
             {
-                active = !active;
-                inventoryTab.GetComponent<RectTransform>().anchoredPosition = new Vector2(startPos.x, startPos.y);
+                CloseInventory();
             }
             else
             {
-                active = !active;
-                inventoryTab.GetComponent<RectTransform>().anchoredPosition = new Vector2(finalPos.x, finalPos.y);
+                OpenInventory();
             }
-        }
-        else
-        {
-            currentTime += Time.deltaTime;
         }
     }
 
+    private void OpenInventory()
+    {
+        active = true;
+        inventoryTab.GetComponent<RectTransform>().anchoredPosition = finalPos;
 
-    //This function is called when the mouses passes through an item in the inventory
-    public void changeDescription(string title, string body, int att1 = 0, string rarity = "",Sprite icon1 = null)
+        // pause game
+        Time.timeScale = 0f;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        // disable player movement
+        if (playerController != null) playerController.DisableMovement();
+    }
+
+    private void CloseInventory()
+    {
+        active = false;
+        inventoryTab.GetComponent<RectTransform>().anchoredPosition = startPos;
+
+        // resume game
+        Time.timeScale = 1f;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
+        // enable player movement
+        if (playerController != null) playerController.EnableMovement();
+    }
+
+    // This function is called when the mouse passes through an item in the inventory
+    public void changeDescription(string title, string body, int att1 = 0, string rarity = "", Sprite icon1 = null)
     {
         itemTitle.text = title;
         itemBody.text = body;
@@ -79,14 +92,11 @@ public class Functionalities : MonoBehaviour //inventoryTab
             atributte1.text = "";
 
         if (icon1 != null)
-        { 
+        {
             image_atributte1.enabled = true;
             image_atributte1.sprite = icon1;
         }
         else
             image_atributte1.enabled = false;
-
     }
 }
-
-

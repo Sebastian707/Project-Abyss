@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Video;
 
 public class Functionalities : MonoBehaviour //inventoryTab
 {
@@ -9,6 +10,7 @@ public class Functionalities : MonoBehaviour //inventoryTab
     public GameObject inventoryTab;
     private Vector2 finalPos;
     private Vector2 startPos;
+    private VideoPlayer[] allVideoPlayers;
 
     [Header("Item Description")]
     public Text itemTitle;
@@ -20,6 +22,11 @@ public class Functionalities : MonoBehaviour //inventoryTab
     public PlayerController playerController; // reference to disable/enable movement
 
     bool active = false;
+
+    private void Awake()
+    {
+        allVideoPlayers = FindObjectsOfType<VideoPlayer>();
+    }
 
     private void Start()
     {
@@ -36,18 +43,28 @@ public class Functionalities : MonoBehaviour //inventoryTab
 
     private void Update()
     {
-        // toggle inventory using key I
+        if (PaperUIManager.PaperIsOpen) return;
         if (Input.GetKeyDown(KeyCode.I))
         {
             if (active)
             {
                 CloseInventory();
+                foreach (VideoPlayer vp in allVideoPlayers)
+                {
+                    // only resume if paused
+                    if (vp.isPaused) vp.Play();
+                }
             }
             else
             {
                 OpenInventory();
+                foreach (VideoPlayer vp in allVideoPlayers)
+                {
+                    if (vp.isPlaying) vp.Pause();
+                }
             }
         }
+
     }
 
     private void OpenInventory()

@@ -9,6 +9,7 @@ public class FlashlightSystem : RechargeableSystem
     public KeyCode toggleKey = KeyCode.F;
     public float batteryDrainRate = 5f;
     public float flickerThresholdPercent = 15f;
+    public GameObject flashlightObject;
 
     private bool isOnRequested = false;
     private float flickerTimer = 0f;
@@ -20,17 +21,33 @@ public class FlashlightSystem : RechargeableSystem
         baseIntensity = flashlight.intensity;
         flashlight.enabled = false;
     }
-
     void Update()
     {
         HandleInput();
         HandleDrain();
+        HandleAutoDisable();
         HandleVisuals();
+    }
+
+    void HandleAutoDisable()
+    {
+        void HandleAutoDisable()
+        {
+            if (!flashlightObject.activeInHierarchy && isOnRequested)
+            {
+                isOnRequested = false;
+                flashlight.enabled = false;
+
+                if (uiText != null)
+                    uiText.enabled = false;
+            }
+        }
+
     }
 
     void HandleInput()
     {
-        if (Input.GetKeyDown(toggleKey))
+        if (flashlightObject.activeInHierarchy && Input.GetKeyDown(toggleKey))
         {
             if (currentPower > 0f || TryConsumeBatteryFromInventory())
                 isOnRequested = !isOnRequested;
@@ -51,6 +68,9 @@ public class FlashlightSystem : RechargeableSystem
     void HandleVisuals()
     {
         flashlight.enabled = isOnRequested;
+        if (uiText != null)
+            uiText.enabled = flashlightObject.activeInHierarchy;
+
         if (!isOnRequested) return;
 
         float threshold = maxPower * (flickerThresholdPercent / 100f);
@@ -63,6 +83,9 @@ public class FlashlightSystem : RechargeableSystem
                 flickerTimer = 0f;
             }
         }
-        else flashlight.intensity = baseIntensity;
+        else
+        {
+            flashlight.intensity = baseIntensity;
+        }
     }
 }

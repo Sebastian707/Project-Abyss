@@ -215,13 +215,7 @@ public class TetrisItemSlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IE
         if (item.equipable)
         {
             item.Use();
-            for (int i = 0; i < item.itemSize.y; i++) //through Y size of item
-            {
-                for (int j = 0; j < item.itemSize.x; j++) //through X size of item
-                {
-                    slots.grid[(int)startPosition.x + j, (int)startPosition.y + i] = 0; //clean the old item position                                                                   
-                }
-            }
+            
 
             Functionalities descript = FindObjectOfType<Functionalities>();
 

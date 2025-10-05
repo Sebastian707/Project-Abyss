@@ -1,20 +1,26 @@
 using UnityEngine;
+using UnityEngine.AI;  
 
 public class DoorLock : Interactable
 {
     [Header("Keypad Settings")]
-    public string requiredKeyID = "LabDoor";   // unique ID of the key needed
-    public GameObject doorToUnlock;            // assign in Inspector
+    public string requiredKeyID = "LabDoor";   
+    public GameObject doorToUnlock;           
     private bool isLocked = true;
     private bool doorOpen;
 
     private TetrisSlot playerSlot;
+    private NavMeshObstacle obstacle; 
 
     void Start()
     {
         playerSlot = FindObjectOfType<TetrisSlot>();
         if (playerSlot == null)
             Debug.LogError("No TetrisSlot found in scene!");
+
+
+        if (doorToUnlock != null)
+            obstacle = doorToUnlock.GetComponent<NavMeshObstacle>();
     }
 
     protected override void Interact()
@@ -48,6 +54,9 @@ public class DoorLock : Interactable
         {
             doorOpen = !doorOpen;
             doorToUnlock.GetComponent<Animator>().SetBool("IsOpen", doorOpen);
+
+            if (obstacle != null)
+                obstacle.enabled = !doorOpen; 
         }
         else
         {

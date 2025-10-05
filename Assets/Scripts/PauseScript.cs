@@ -1,6 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Video; // required for VideoPlayer
 
 public class PauseScript : MonoBehaviour
 {
@@ -8,29 +7,39 @@ public class PauseScript : MonoBehaviour
     public PlayerController playerController;
     public KeyCode pauseKey = KeyCode.Escape;
 
+    private VideoPlayer[] allVideoPlayers;
 
     private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        // find all VideoPlayers in the scene (or cache specific ones if you want)
+        allVideoPlayers = FindObjectsOfType<VideoPlayer>();
     }
 
     private void Awake()
     {
-        pauseScreen.SetActive(false); 
+        pauseScreen.SetActive(false);
     }
 
     void Update()
     {
+        if (PaperUIManager.PaperIsOpen) return;
         if (Input.GetKeyDown(pauseKey))
         {
             Time.timeScale = 0;
-            pauseScreen.SetActive(true); 
+            pauseScreen.SetActive(true);
+            playerController.DisableMovement();
 
-            playerController.DisableMovement();  
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
 
-            Cursor.lockState = CursorLockMode.None;  
-            Cursor.visible = true; 
+            // pause all video players
+            foreach (VideoPlayer vp in allVideoPlayers)
+            {
+                if (vp.isPlaying) vp.Pause();
+            }
         }
     }
 }

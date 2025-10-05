@@ -36,9 +36,6 @@ public class TetrisSlot : MonoBehaviour
     {
         playerInventory = FindObjectOfType<TetrisInventory>();
 
-        maxGridX = 14;
-        maxGridY = (int)((playerInventory.numberSlots + 1) / maxGridX);
-
         grid = new int[maxGridX, maxGridY]; // matrix of bag size
     }
 

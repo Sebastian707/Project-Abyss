@@ -31,22 +31,32 @@ public abstract class RechargeableSystem : MonoBehaviour
             TetrisItemSlot slot = bag[i];
             if (slot == null || slot.item == null) continue;
 
-            Ammo ammo = slot.item as Ammo;
-            if (ammo != null && ammo.AmmoID == batteryItemID)
+            // Check if the item matches the battery ID
+            if (slot.item.itemID == batteryItemID)
             {
-                ClearGridCellsForSlot(slot);
-                bag.RemoveAt(i);
-                Destroy(slot.gameObject);
+                // Decrease stack by 1
+                slot.currentStack--;
+                slot.currentStack++;
+                slot.UpdateStackUI();
+
+                // If stack hits 0, remove slot and free grid
+                if (slot.currentStack <= 0)
+                {
+                    ClearGridCellsForSlot(slot);
+                    bag.RemoveAt(i);
+                    Destroy(slot.gameObject);
+                }
 
                 currentPower = maxPower;
                 UpdateUI();
                 return true;
             }
         }
-        return false;
+
+        return false; // No battery found
     }
 
-    void ClearGridCellsForSlot(TetrisItemSlot slot)
+    protected void ClearGridCellsForSlot(TetrisItemSlot slot)
     {
         if (playerSlot == null || playerSlot.grid == null) return;
         if (slot == null || slot.item == null) return;

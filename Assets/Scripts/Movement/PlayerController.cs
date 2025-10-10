@@ -6,7 +6,7 @@ public class PlayerController : MonoBehaviour
 {
     public Camera playerCamera;
     public float walkSpeed = 6f;
-    public float sprintSpeed = 12f; 
+    public float sprintSpeed = 12f;
     public float jumpPower = 7f;
     public float gravity = 10f;
 
@@ -30,11 +30,13 @@ public class PlayerController : MonoBehaviour
     private float footstepTimer = 0f;
     public float footstepDelay = 0.5f;
 
+    // Public flags for external use
+    public bool isAiming { get; private set; }
+    public bool isSprinting { get; private set; }
+
     void Start()
     {
         characterController = GetComponent<CharacterController>();
-        //Cursor.lockState = CursorLockMode.Locked;
-        //Cursor.visible = false;
 
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
@@ -45,60 +47,89 @@ public class PlayerController : MonoBehaviour
         audioSource.spatialBlend = 1f;
     }
 
+
+
     void Update()
     {
         if (!canMove) return;
 
-        #region Handles Movement
+        HandleAimSprintLogic();
+        HandleMovement();
+        HandleJumping();
+        HandleRotation();
+        HandleFootsteps();
+    }
+
+    public void DisableMovement() { canMove = false; }
+    public void EnableMovement() { canMove = true; }
+
+    void HandleAimSprintLogic()
+    {
+        bool aimInput = Input.GetMouseButton(1);
+        bool sprintInput = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+
+        // --- Priority: Sprint blocks aiming entirely ---
+        if (sprintInput)
+        {
+            isSprinting = true;
+            isAiming = false; // block aiming while sprinting
+        }
+        else if (aimInput)
+        {
+            isAiming = true;
+            isSprinting = false; // block sprinting while aiming
+        }
+        else
+        {
+            isAiming = false;
+            isSprinting = false;
+        }
+    }
+
+    void HandleMovement()
+    {
         Vector3 forward = transform.TransformDirection(Vector3.forward);
         Vector3 right = transform.TransformDirection(Vector3.right);
 
-        float currentSpeed = walkSpeed;
-
-        // Check if the player is holding the shift key for sprinting
-        if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
-        {
-            currentSpeed = sprintSpeed;  // Set to sprint speed
-        }
+        float currentSpeed = isSprinting ? sprintSpeed : walkSpeed;
 
         float curSpeedX = currentSpeed * Input.GetAxis("Vertical");
         float curSpeedY = currentSpeed * Input.GetAxis("Horizontal");
         float movementDirectionY = moveDirection.y;
+
         moveDirection = (forward * curSpeedX) + (right * curSpeedY);
-
         isMoving = (curSpeedX != 0 || curSpeedY != 0) && characterController.isGrounded;
-        #endregion
 
-        #region Handles Jumping
+        moveDirection.y = movementDirectionY;
+    }
+
+    void HandleJumping()
+    {
         if (Input.GetButton("Jump") && canMove && characterController.isGrounded)
         {
             moveDirection.y = jumpPower;
         }
-        else
-        {
-            moveDirection.y = movementDirectionY;
-        }
-
-        if (!characterController.isGrounded)
+        else if (!characterController.isGrounded)
         {
             moveDirection.y -= gravity * Time.deltaTime;
         }
-        #endregion
 
-        #region Handles Rotation
         characterController.Move(moveDirection * Time.deltaTime);
+    }
 
-        if (canMove)
-        {
-            rotationX += -Input.GetAxis("Mouse Y") * lookSpeed;
-            rotationX = Mathf.Clamp(rotationX, -lookXLimit, lookXLimit);
-            playerCamera.transform.localRotation = Quaternion.Euler(rotationX, 0, 0);
-            transform.rotation *= Quaternion.Euler(0, Input.GetAxis("Mouse X") * lookSpeed, 0);
-        }
-        #endregion
+    void HandleRotation()
+    {
+        if (!canMove) return;
 
-        #region Handle Footsteps
-        if (isMoving)
+        rotationX += -Input.GetAxis("Mouse Y") * lookSpeed;
+        rotationX = Mathf.Clamp(rotationX, -lookXLimit, lookXLimit);
+        playerCamera.transform.localRotation = Quaternion.Euler(rotationX, 0, 0);
+        transform.rotation *= Quaternion.Euler(0, Input.GetAxis("Mouse X") * lookSpeed, 0);
+    }
+
+    void HandleFootsteps()
+    {
+        if (isMoving && characterController.isGrounded)
         {
             footstepTimer += Time.deltaTime;
             if (footstepTimer >= footstepDelay)
@@ -111,23 +142,11 @@ public class PlayerController : MonoBehaviour
         {
             footstepTimer = 0f;
         }
-        #endregion
-    }
-
-    public void DisableMovement()
-    {
-        canMove = false;
-    }
-
-    public void EnableMovement()
-    {
-        canMove = true;
     }
 
     private void PlayFootstepSound()
     {
         string surfaceTag = GetSurfaceTag();
-
         AudioClip[] chosenClips = DefaultFootstepClips;
 
         switch (surfaceTag)

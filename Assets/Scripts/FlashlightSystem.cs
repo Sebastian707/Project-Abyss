@@ -47,6 +47,7 @@ public class FlashlightSystem : RechargeableSystem
 
     void HandleInput()
     {
+        if (Time.timeScale == 0) return;
         if (flashlightObject.activeInHierarchy && Input.GetKeyDown(toggleKey))
         {
             if (currentPower > 0f || TryConsumeBatteryFromInventory())

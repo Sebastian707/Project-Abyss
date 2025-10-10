@@ -8,6 +8,7 @@ public abstract class Interactable : MonoBehaviour
 
     public void BaseInteract()
     {
+        if (Time.timeScale == 0) return;
         Interact();
     }
 

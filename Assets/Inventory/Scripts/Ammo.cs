@@ -6,7 +6,8 @@ using UnityEngine;
 public class Ammo : TetrisItem
 {
     [Header("Ammo Settings")]
-    public string AmmoID;  
+    public string AmmoID;
+
 
     public override void Use()
     {

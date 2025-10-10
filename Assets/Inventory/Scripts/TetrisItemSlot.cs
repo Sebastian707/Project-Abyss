@@ -1,225 +1,293 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using TMPro;
 
-public class TetrisItemSlot : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerEnterHandler, IPointerExitHandler
+public class TetrisItemSlot : MonoBehaviour,
+    IBeginDragHandler, IDragHandler, IEndDragHandler,
+    IPointerEnterHandler, IPointerExitHandler, IDropHandler
 {
-    //script with the items in the bag, drap and drop functions, reescaling based on item size.
-    //This script is present in each collected item
-
-    public Vector2 size = new Vector2(34f, 34f); //slot cell size 
+    public Vector2 size = new Vector2(34f, 34f); // grid cell base size
     public TetrisItem item;
 
     public Vector2 startPosition;
     public Vector2 oldPosition;
     public Image icon;
+    private bool isDragging = false;
 
-    TetrisSlot slots;
 
+    [Header("Stack Settings")]
+    public TMP_Text stackCountText; // assigned in prefab
+    public int currentStack = 1;
 
+    private TetrisSlot slots;
+
+    void Awake()
+    {
+        if (stackCountText == null)
+            stackCountText = GetComponentInChildren<TMP_Text>();
+    }
 
     void Start()
     {
+        // --- Rescale item visuals ---
+        RescaleItem();
 
-        #region Rescaling
+        slots = FindObjectOfType<TetrisSlot>();
 
-        GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, item.itemSize.y * size.y);
-        GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, item.itemSize.x * size.x);
+        // Mark occupied grid cells based on item size
+        for (int y = 0; y < item.itemSize.y; y++)
+        {
+            for (int x = 0; x < item.itemSize.x; x++)
+            {
+                int gx = (int)(startPosition.x + x);
+                int gy = (int)(startPosition.y + y);
+                if (gx >= 0 && gx < slots.maxGridX && gy >= 0 && gy < slots.maxGridY)
+                    slots.grid[gx, gy] = 1;
+            }
+        }
+
+        currentStack = Mathf.Max(1, currentStack);
+        UpdateStackUI();
+    }
+
+    void RescaleItem()
+    {
+        RectTransform rt = GetComponent<RectTransform>();
+        rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, item.itemSize.y * size.y);
+        rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, item.itemSize.x * size.x);
 
         foreach (RectTransform child in transform)
         {
-            child.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, item.itemSize.y * child.rect.height);
-            child.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, item.itemSize.x * child.rect.width);
+            child.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, item.itemSize.y * child.rect.height);
+            child.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, item.itemSize.x * child.rect.width);
 
             foreach (RectTransform iconChild in child)
             {
-                iconChild.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, item.itemSize.y * iconChild.rect.height);
-                iconChild.GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, item.itemSize.x * iconChild.rect.width);
-                iconChild.localPosition = new Vector2(child.localPosition.x + child.rect.width / 2, child.localPosition.y + child.rect.height / 2 * -1f);
+                iconChild.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, item.itemSize.y * iconChild.rect.height);
+                iconChild.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, item.itemSize.x * iconChild.rect.width);
+                iconChild.localPosition = new Vector2(
+                    child.localPosition.x + child.rect.width / 2,
+                    child.localPosition.y - child.rect.height / 2);
             }
-
         }
-        #endregion
-
-        slots = FindObjectOfType<TetrisSlot>();
     }
 
-    public void OnPointerEnter(PointerEventData eventData) // shows item description
+    public void UpdateStackUI()
     {
-        string title = eventData.pointerCurrentRaycast.gameObject.GetComponentInParent<TetrisItemSlot>().item.itemName;
-        string body = eventData.pointerCurrentRaycast.gameObject.GetComponentInParent<TetrisItemSlot>().item.itemDescription;
-        int attributte1 = eventData.pointerCurrentRaycast.gameObject.GetComponentInParent<TetrisItemSlot>().item.getAtt1();
-        Sprite icon_attribute = eventData.pointerCurrentRaycast.gameObject.GetComponentInParent<TetrisItemSlot>().item.getAtt1Icon();
-        string rarity = eventData.pointerCurrentRaycast.gameObject.GetComponentInParent<TetrisItemSlot>().item.rarity;
+        if (stackCountText != null)
+        {
+            if (currentStack > 1)
+            {
+                stackCountText.gameObject.SetActive(true);
+                stackCountText.text = currentStack.ToString();
+            }
+            else
+            {
+                stackCountText.gameObject.SetActive(false);
+                stackCountText.text = "";
+            }
+        }
+    }
+
+    public bool CanStackWith(TetrisItem other)
+    {
+        return other != null && other.itemID == item.itemID && currentStack < item.MaxStackSize;
+    }
+
+    public void AddToStack(int amount)
+    {
+        currentStack += amount;
+        if (currentStack > item.MaxStackSize)
+            currentStack = item.MaxStackSize;
+        UpdateStackUI();
+    }
+
+    #region Pointer Hover
+    public void OnPointerEnter(PointerEventData eventData)
+    {
         Functionalities descript = FindObjectOfType<Functionalities>();
-
-        descript.changeDescription(title, body, attributte1, rarity, icon_attribute);
-
+        descript.changeDescription(item.itemName, item.itemDescription, item.getAtt1(), item.rarity, item.getAtt1Icon());
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
         Functionalities descript = FindObjectOfType<Functionalities>();
-
         descript.changeDescription("", "", 0, "");
-
     }
+    #endregion
 
+    #region Drag Handlers
     public void OnBeginDrag(PointerEventData eventData)
     {
-        oldPosition = transform.GetComponent<RectTransform>().anchoredPosition;
-
-        GetComponent<CanvasGroup>().blocksRaycasts = false; // disable registering hit on item
+        oldPosition = GetComponent<RectTransform>().anchoredPosition;
+        GetComponent<CanvasGroup>().blocksRaycasts = false;
     }
 
     public void OnDrag(PointerEventData eventData)
     {
         transform.position = eventData.position;
-        //allow the intersection between old pos and new pos.
-        for (int i = 0; i < item.itemSize.y; i++)
-        {
-            for (int j = 0; j < item.itemSize.x; j++)
-            {
-                slots.grid[(int)startPosition.x + j, (int)startPosition.y + i] = 0;
-
-            }
-        }
-
+        // Temporarily clear occupied grid
+        for (int y = 0; y < item.itemSize.y; y++)
+            for (int x = 0; x < item.itemSize.x; x++)
+                slots.grid[(int)startPosition.x + x, (int)startPosition.y + y] = 0;
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
+        GetComponent<CanvasGroup>().blocksRaycasts = true;
+
         if (EventSystem.current.IsPointerOverGameObject())
         {
-            Vector2 finalPos = GetComponent<RectTransform>().anchoredPosition; //position that the item was dropped on canvas
-
+            Vector2 finalPos = GetComponent<RectTransform>().anchoredPosition;
             Vector2 finalSlot;
-            finalSlot.x = Mathf.Floor(finalPos.x / size.x); //which x slot it is
-            finalSlot.y = Mathf.Floor(-finalPos.y / size.y); //which y slot it is
-            Debug.Log("Slot :" + finalSlot);
+            finalSlot.x = Mathf.Floor(finalPos.x / size.x);
+            finalSlot.y = Mathf.Floor(-finalPos.y / size.y);
 
-            if (((int)(finalSlot.x) + (int)(item.itemSize.x) - 1) < slots.maxGridX && ((int)(finalSlot.y) + (int)(item.itemSize.y) - 1) < slots.maxGridY && ((int)(finalSlot.x)) >= 0 && (int)finalSlot.y >= 0) // test if item is inside slot area
+            if (((int)finalSlot.x + (int)item.itemSize.x - 1) < slots.maxGridX &&
+                ((int)finalSlot.y + (int)item.itemSize.y - 1) < slots.maxGridY &&
+                (finalSlot.x >= 0 && finalSlot.y >= 0))
             {
-                List<Vector2> newPosItem = new List<Vector2>(); //new item position in bag
+                List<Vector2> newPosItem = new List<Vector2>();
                 bool fit = false;
 
-                for (int sizeY = 0; sizeY < item.itemSize.y; sizeY++)
+                for (int y = 0; y < item.itemSize.y; y++)
                 {
-                    for (int sizeX = 0; sizeX < item.itemSize.x; sizeX++)
+                    for (int x = 0; x < item.itemSize.x; x++)
                     {
-                        if (slots.grid[(int)finalSlot.x + sizeX, (int)finalSlot.y + sizeY] != 1)
+                        int gridX = (int)finalSlot.x + x;
+                        int gridY = (int)finalSlot.y + y;
+
+                        if (slots.grid[gridX, gridY] != 1)
                         {
-                            Vector2 pos;
-                            pos.x = (int)finalSlot.x + sizeX;
-                            pos.y = (int)finalSlot.y + sizeY;
-                            newPosItem.Add(pos);
+                            newPosItem.Add(new Vector2(gridX, gridY));
                             fit = true;
                         }
                         else
                         {
                             fit = false;
-
-                            this.transform.GetComponent<RectTransform>().anchoredPosition = oldPosition; //back to old pos
-                            sizeX = (int)item.itemSize.x;
-                            sizeY = (int)item.itemSize.y;
+                            transform.GetComponent<RectTransform>().anchoredPosition = oldPosition;
                             newPosItem.Clear();
-
+                            x = (int)item.itemSize.x;
+                            y = (int)item.itemSize.y;
                         }
-
                     }
-
                 }
+
                 if (fit)
-                { //delete old item position in bag
-                    for (int i = 0; i < item.itemSize.y; i++) //through item Y
-                    {
-                        for (int j = 0; j < item.itemSize.x; j++) //through item X
-                        {
-                            slots.grid[(int)startPosition.x + j, (int)startPosition.y + i] = 0; //clean old pos
-
-                        }
-                    }
-
-                    for (int i = 0; i < newPosItem.Count; i++)
-                    {
-                        slots.grid[(int)newPosItem[i].x, (int)newPosItem[i].y] = 1; // add new pos
-                    }
-
-                    this.startPosition = newPosItem[0]; // set new start position
-                    transform.GetComponent<RectTransform>().anchoredPosition = new Vector2(newPosItem[0].x * size.x, -newPosItem[0].y * size.y);
-                    Debug.Log("Position: " + transform.GetComponent<RectTransform>().anchoredPosition);
-                }
-                else //item voltou pra mesma posição da bag e marca com 1
                 {
-                    for (int i = 0; i < item.itemSize.y; i++) //through item Y
-                    {
-                        for (int j = 0; j < item.itemSize.x; j++) //through item X
-                        {
-                            slots.grid[(int)startPosition.x + j, (int)startPosition.y + i] = 1; //back to position 1;
+                    // Clear old grid
+                    for (int y = 0; y < item.itemSize.y; y++)
+                        for (int x = 0; x < item.itemSize.x; x++)
+                            slots.grid[(int)startPosition.x + x, (int)startPosition.y + y] = 0;
 
-                        }
-                    }
+                    // Mark new grid
+                    foreach (Vector2 pos in newPosItem)
+                        slots.grid[(int)pos.x, (int)pos.y] = 1;
+
+                    startPosition = newPosItem[0];
+                    transform.GetComponent<RectTransform>().anchoredPosition =
+                        new Vector2(startPosition.x * size.x, -startPosition.y * size.y);
+                }
+                else
+                {
+                    // Re-mark old grid (fixed bug here)
+                    for (int y = 0; y < item.itemSize.y; y++)
+                        for (int x = 0; x < item.itemSize.x; x++)
+                            slots.grid[(int)startPosition.x + x, (int)startPosition.y + y] = 1;
                 }
             }
             else
-            { // out of index, back to the old pos
-                this.transform.GetComponent<RectTransform>().anchoredPosition = oldPosition;
+            {
+                transform.GetComponent<RectTransform>().anchoredPosition = oldPosition;
             }
         }
         else
         {
-
-            PlayerController player;
-            player = FindObjectOfType<PlayerController>();
-
-            TetrisListItens itenInGame; // list of items prefab to could be instantiated when dropping item.
-            itenInGame = FindObjectOfType<TetrisListItens>();
-
-            for (int t = 0; t < itenInGame.prefabs.Length; t++)
-            {
-                if (itenInGame.itens[t].itemName == item.itemName)
-                {
-                    Instantiate(itenInGame.prefabs[t].gameObject, new Vector2(player.transform.position.x + Random.Range(-1.5f, 1.5f), player.transform.position.y + Random.Range(-1.5f, 1.5f)), Quaternion.identity); //dropa o item
-
-                    Destroy(this.gameObject);
-                    break;
-                }
-
-            }
-
+            DropOutsideInventory();
         }
-        GetComponent<CanvasGroup>().blocksRaycasts = true; //register hit on item again
     }
 
-    public void clicked()//if item was clicked in inventory
+    void DropOutsideInventory()
+    {
+        PlayerController player = FindObjectOfType<PlayerController>();
+        TetrisListItens itenInGame = FindObjectOfType<TetrisListItens>();
+
+        for (int t = 0; t < itenInGame.prefabs.Length; t++)
+        {
+            if (itenInGame.itens[t].itemName == item.itemName)
+            {
+                Instantiate(itenInGame.prefabs[t].gameObject,
+                    new Vector2(player.transform.position.x + Random.Range(-1.5f, 1.5f),
+                                player.transform.position.y + Random.Range(-1.5f, 1.5f)),
+                    Quaternion.identity);
+                Destroy(this.gameObject);
+                break;
+            }
+        }
+    }
+    #endregion
+
+    #region Stack Merge
+    public void OnDrop(PointerEventData eventData)
+    {
+        TetrisItemSlot droppedSlot = eventData.pointerDrag?.GetComponent<TetrisItemSlot>();
+        if (droppedSlot == null || droppedSlot == this) return;
+
+        // Merge if same item type and stackable
+        if (CanStackWith(droppedSlot.item))
+        {
+            int total = currentStack + droppedSlot.currentStack;
+            int overflow = total - item.MaxStackSize;
+
+            currentStack = Mathf.Min(total, item.MaxStackSize);
+            UpdateStackUI();
+
+            if (overflow > 0)
+            {
+                droppedSlot.currentStack = overflow;
+                droppedSlot.UpdateStackUI();
+            }
+            else
+            {
+                // fully merged, destroy dropped slot
+                Destroy(droppedSlot.gameObject);
+            }
+        }
+    }
+    #endregion
+
+    #region Click Logic
+    public void clicked()
     {
         if (item.usable)
         {
             item.Use();
-            for (int i = 0; i < item.itemSize.y; i++) //through Y size of item
+            currentStack--;
+            UpdateStackUI();
+
+            if (currentStack <= 0)
             {
-                for (int j = 0; j < item.itemSize.x; j++) //through X size of item
-                {
-                    slots.grid[(int)startPosition.x + j, (int)startPosition.y + i] = 0; //clean the old item position                                                                   
-                }
+                for (int y = 0; y < item.itemSize.y; y++)
+                    for (int x = 0; x < item.itemSize.x; x++)
+                        slots.grid[(int)startPosition.x + x, (int)startPosition.y + y] = 0;
+
+                Destroy(this.gameObject);
             }
 
-            Destroy(this.gameObject); //item drop
             Functionalities descript = FindObjectOfType<Functionalities>();
-
-            descript.changeDescription("", "", 0, "");//clean description
+            descript.changeDescription("", "", 0, "");
         }
 
         if (item.equipable)
         {
             item.Use();
-            
-
             Functionalities descript = FindObjectOfType<Functionalities>();
-
-            descript.changeDescription("", "", 0, "");//clean description
+            descript.changeDescription("", "", 0, "");
         }
     }
+    #endregion
+
+
 }

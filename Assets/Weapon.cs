@@ -21,6 +21,11 @@ public class Weapon : MonoBehaviour
     protected Vector3 defaultLocalPosition;
     private PlayerController player;
 
+    public Camera playerCamera;
+    private float defaultFOV;
+    public float adsFOVOffset = 15f; 
+    public float fovChangeSpeed = 10f; 
+
 
 
 
@@ -110,6 +115,11 @@ public class Weapon : MonoBehaviour
         timeSinceLastShot = 1f / fireRate;
         defaultLocalPosition = muzzleTransform.parent.localPosition;
 
+        playerCamera = Camera.main;
+        if (playerCamera != null)
+            defaultFOV = playerCamera.fieldOfView;
+
+
     }
 
     protected virtual void InitPools()
@@ -181,7 +191,24 @@ public class Weapon : MonoBehaviour
             Vector3 targetPos = isAiming ? adsTransform.localPosition : defaultLocalPosition;
             muzzleTransform.parent.localPosition = Vector3.Lerp(muzzleTransform.parent.localPosition, targetPos, Time.deltaTime * adsSpeed);
         }
-      
+        if (player != null && !player.isSprinting && Input.GetMouseButton(1))
+        {
+            isAiming = true;
+        }
+        else
+        {
+            isAiming = false;
+        }
+
+        if (playerCamera != null)
+        {
+            float targetFOV = isAiming ? defaultFOV - adsFOVOffset : defaultFOV;
+            playerCamera.fieldOfView = Mathf.Lerp(
+                playerCamera.fieldOfView,
+                targetFOV,
+                Time.deltaTime * fovChangeSpeed
+            );
+        }
 
     }
 

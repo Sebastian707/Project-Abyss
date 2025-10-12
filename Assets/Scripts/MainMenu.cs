@@ -4,16 +4,23 @@ using UnityEngine.Audio;
 public class MainMenu : MonoBehaviour
 {
     [SerializeField] private GameObject playMenu;
+    [SerializeField] private GameObject SettingsMenu;
     [SerializeField] private GameObject CreditsMenu;
     [SerializeField] private GameObject ConfirmMenu;
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip buttonClickSound;
- 
+
 
     [System.Obsolete]
     public void OnBegin()
     {
         
+    }
+
+    public void OnSettings()
+    {
+        playMenu.SetActive(false);
+        SettingsMenu.SetActive(true);
     }
 
     public void OnCredits()
@@ -26,6 +33,8 @@ public class MainMenu : MonoBehaviour
     {
         playMenu.SetActive(true);
         CreditsMenu.SetActive(false);
+        SettingsMenu.SetActive(false);
+     
     }
 
     public void OnQuit()

@@ -51,6 +51,8 @@ public class Weapon : MonoBehaviour
     public float maxDistance = 100f;
     public float damage = 25f;
     public LayerMask hitMask = ~0;
+    public Transform raycastOrigin;
+
 
     [Header("Transforms & Prefabs")]
     public Transform muzzleTransform;
@@ -274,9 +276,10 @@ public class Weapon : MonoBehaviour
 
         for (int i = 0; i < pelletsPerShot; i++)
         {
-            Vector3 dir = GetShotDirection(i);
-            if (Physics.Raycast(muzzleTransform.position, dir, out RaycastHit hit, maxDistance, hitMask))
-                ApplyHit(hit, dir);
+            Vector3 origin = raycastOrigin != null ? raycastOrigin.position : muzzleTransform.position;
+            Vector3 direction = GetShotDirection(i);
+            if (Physics.Raycast(origin, direction, out RaycastHit hit, maxDistance, hitMask))
+                ApplyHit(hit, direction);
         }
 
         timeSinceLastShot = 0f;

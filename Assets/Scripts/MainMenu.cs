@@ -9,12 +9,13 @@ public class MainMenu : MonoBehaviour
     [SerializeField] private GameObject ConfirmMenu;
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip buttonClickSound;
+    [SerializeField] private string targetScene;
 
 
     [System.Obsolete]
     public void OnBegin()
     {
-        
+        SceneTransitionManager.Instance.TransitionToScene(targetScene);
     }
 
     public void OnSettings()

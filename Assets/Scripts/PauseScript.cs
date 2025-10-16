@@ -7,6 +7,7 @@ public class PauseScript : MonoBehaviour
     public PlayerController playerController;
     public KeyCode pauseKey = KeyCode.Escape;
 
+
     private VideoPlayer[] allVideoPlayers;
 
     private void Start()
@@ -26,6 +27,7 @@ public class PauseScript : MonoBehaviour
     void Update()
     {
         if (PaperUIManager.PaperIsOpen) return;
+        if (Time.timeScale == 0) return;
         if (Input.GetKeyDown(pauseKey))
         {
             Time.timeScale = 0;

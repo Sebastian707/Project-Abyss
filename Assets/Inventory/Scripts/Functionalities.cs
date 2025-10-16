@@ -69,6 +69,7 @@ public class Functionalities : MonoBehaviour //inventoryTab
 
     private void OpenInventory()
     {
+        if (Time.timeScale == 0) return;
         active = true;
         inventoryTab.GetComponent<RectTransform>().anchoredPosition = finalPos;
 

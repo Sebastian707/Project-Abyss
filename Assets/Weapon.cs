@@ -8,6 +8,9 @@ public class Weapon : MonoBehaviour
 {
     public enum FireMode { SemiAuto, FullAuto, Burst }
 
+    private Animator childAnimator;
+
+
     [Header("General")]
     public string weaponName = "Raycast Weapon";
     public string ammoItemID = "9mm";
@@ -121,7 +124,7 @@ public class Weapon : MonoBehaviour
         if (playerCamera != null)
             defaultFOV = playerCamera.fieldOfView;
 
-
+        childAnimator = GetComponentInChildren<Animator>();
     }
 
     protected virtual void InitPools()
@@ -378,48 +381,55 @@ public class Weapon : MonoBehaviour
         audioSource.pitch = 1f + Random.Range(-audioPitchVariation, audioPitchVariation);
         audioSource.PlayOneShot(clip);
     }
-public virtual void Reload()
-{
-    if (isReloading) return; 
-    if (currentMagazine >= magazineSize)
+    public virtual void Reload()
     {
-        Debug.Log("Magazine full.");
-        return;
-    }
-
-    if (playerSlot == null || playerSlot.itensInBag == null)
-    {
-        Debug.LogWarning("No player inventory found.");
-        return;
-    }
-
-    bool hasAmmo = false;
-    for (int i = playerSlot.itensInBag.Count - 1; i >= 0; i--)
-    {
-        TetrisItemSlot slot = playerSlot.itensInBag[i];
-        if (slot == null || slot.item == null) continue;
-
-        Ammo ammo = slot.item as Ammo;
-        if (ammo != null && ammo.AmmoID == ammoItemID && slot.currentStack > 0)
+        if (isReloading) return;
+        if (currentMagazine >= magazineSize)
         {
-            hasAmmo = true;
-            break;
+            Debug.Log("Magazine full.");
+            return;
         }
+
+
+        if (playerSlot == null || playerSlot.itensInBag == null)
+        {
+            Debug.LogWarning("No player inventory found.");
+            return;
+        }
+
+        bool hasAmmo = false;
+        for (int i = playerSlot.itensInBag.Count - 1; i >= 0; i--)
+        {
+            TetrisItemSlot slot = playerSlot.itensInBag[i];
+            if (slot == null || slot.item == null) continue;
+
+            Ammo ammo = slot.item as Ammo;
+            if (ammo != null && ammo.AmmoID == ammoItemID && slot.currentStack > 0)
+            {
+                hasAmmo = true;
+                break;
+            }
+        }
+
+        if (!hasAmmo)
+        {
+            PlaySound(soundEmpty);
+            Debug.Log("No ammo in inventory to reload!");
+            return;
+        }
+
+        //  Trigger the animation on the child
+        if (childAnimator != null)
+            childAnimator.SetTrigger("Reload");
+
+        StartCoroutine(ReloadCoroutine());
     }
 
-    if (!hasAmmo)
-    {
-        PlaySound(soundEmpty);
-        Debug.Log("No ammo in inventory to reload!");
-        return; 
-    }
-
-    StartCoroutine(ReloadCoroutine());
-}
 
     protected IEnumerator ReloadCoroutine()
     {
         isReloading = true;
+        PlaySound(soundReload);
 
         int bulletsNeeded = magazineSize - currentMagazine;
 

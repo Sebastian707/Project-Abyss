@@ -12,7 +12,6 @@ public class MainMenu : MonoBehaviour
     [SerializeField] private string targetScene;
 
 
-    [System.Obsolete]
     public void OnBegin()
     {
         SceneTransitionManager.Instance.TransitionToScene(targetScene);

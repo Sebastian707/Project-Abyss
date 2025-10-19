@@ -9,7 +9,7 @@ public class PaperUIManager : MonoBehaviour
     [Header("UI References")]
     public GameObject paperPanel;
     public TextMeshProUGUI paperContentText;
-    public Image paperBackgroundImage; // Reference to the Image component for background
+    public Image paperBackgroundImage;
 
     public static bool PaperIsOpen = false;
 
@@ -18,7 +18,6 @@ public class PaperUIManager : MonoBehaviour
         Instance = this;
         paperPanel.SetActive(false);
 
-        // Add click listener to whole panel
         Button panelButton = paperPanel.GetComponent<Button>();
         if (panelButton == null)
         {
@@ -29,14 +28,13 @@ public class PaperUIManager : MonoBehaviour
 
     public void ShowPaper(PaperItem paper)
     {
-        // Set text and font
+        paperContentText.color = paper.color;
         paperContentText.text = paper.paperText;
         if (paper.font != null)
         {
             paperContentText.font = paper.font;
         }
 
-        // Set background image
         if (paper.backgroundImage != null)
         {
             paperBackgroundImage.sprite = paper.backgroundImage;

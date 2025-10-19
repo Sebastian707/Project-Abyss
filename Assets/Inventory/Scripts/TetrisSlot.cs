@@ -14,6 +14,7 @@ public class TetrisSlot : MonoBehaviour
             return;
         }
         instanceSlot = this;
+        grid = new int[maxGridX, maxGridY];
     }
     #endregion
 
@@ -29,7 +30,6 @@ public class TetrisSlot : MonoBehaviour
     void Start()
     {
         playerInventory = FindObjectOfType<TetrisInventory>();
-        grid = new int[maxGridX, maxGridY];
     }
 
     /// <summary>

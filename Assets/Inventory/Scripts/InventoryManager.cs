@@ -1,43 +1,133 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class InventoryManager : MonoBehaviour
 {
     public static InventoryManager Instance;
 
-    private void Start()
-    {
-        Instance = this;
-        LoadInventory();
-    }
-
-
     [Header("References")]
     public TetrisListItens listItens;
     public TetrisSlot slotGrid;
+    public Transform playerTransform; // Reference to player
 
     [Header("Save Settings")]
     public string saveFileName = "save.json";
 
     [HideInInspector]
-    public List<string> pickedPickups = new List<string>(); // new: store collected objects
+    public List<string> pickedPickups = new List<string>();
 
-    #region Save/Load Inventory
-    public void SaveInventory()
+    private string SavePath => Path.Combine(Application.persistentDataPath, saveFileName);
+
+    private void Awake()
+    {
+        LoadGame();
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    private void Start()
+    {
+        // Optional: load automatically when entering game scene
+        // LoadGame();
+    }
+
+    #region === SAVE / LOAD SYSTEM ===
+
+    public void SaveGame()
     {
         InventorySaveData saveData = new InventorySaveData
         {
-            items = new List<InventoryItemData>(),
-            pickedPickups = pickedPickups // save collected pickups
+            items = GetAllItemsData(),
+            pickedPickups = pickedPickups,
+            sceneName = SceneManager.GetActiveScene().name,
+            playerPosition = playerTransform != null ? playerTransform.position : Vector3.zero
         };
 
+        string json = JsonUtility.ToJson(saveData, true);
+        File.WriteAllText(SavePath, json);
+
+        Debug.Log($"✅ Game saved to {SavePath}");
+    }
+
+    public void LoadGame()
+    {
+        if (!File.Exists(SavePath))
+        {
+            Debug.LogWarning("⚠️ No save file found!");
+            return;
+        }
+
+        string json = File.ReadAllText(SavePath);
+        InventorySaveData saveData = JsonUtility.FromJson<InventorySaveData>(json);
+
+        // If we’re not already in the correct scene, load it first
+        if (SceneManager.GetActiveScene().name != saveData.sceneName)
+        {
+            StartCoroutine(LoadSceneAndRestore(saveData));
+            return;
+        }
+
+        RestoreGameState(saveData);
+    }
+
+    private System.Collections.IEnumerator LoadSceneAndRestore(InventorySaveData saveData)
+    {
+        AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(saveData.sceneName);
+        while (!asyncLoad.isDone)
+            yield return null;
+
+        yield return null; // wait one frame for scene init
+
+        RestoreGameState(saveData);
+    }
+
+    private void RestoreGameState(InventorySaveData saveData)
+    {
+        if (playerTransform != null)
+            playerTransform.position = saveData.playerPosition;
+
+        LoadInventoryData(saveData);
+
+        Debug.Log($"✅ Game loaded. Scene: {saveData.sceneName}, Position: {saveData.playerPosition}");
+    }
+
+    public bool HasSave()
+    {
+        return File.Exists(SavePath);
+    }
+
+    public string GetSavedScene()
+    {
+        if (!HasSave()) return null;
+
+        string json = File.ReadAllText(SavePath);
+        InventorySaveData data = JsonUtility.FromJson<InventorySaveData>(json);
+        return data.sceneName;
+    }
+
+    #endregion
+
+    #region === INVENTORY ===
+
+    public List<InventoryItemData> GetAllItemsData()
+    {
+        List<InventoryItemData> items = new List<InventoryItemData>();
         TetrisItemSlot[] slots = FindObjectsOfType<TetrisItemSlot>();
+
         foreach (var slot in slots)
         {
             if (slot.item != null)
             {
-                saveData.items.Add(new InventoryItemData
+                items.Add(new InventoryItemData
                 {
                     itemID = slot.item.itemID,
                     position = slot.startPosition,
@@ -46,25 +136,17 @@ public class InventoryManager : MonoBehaviour
             }
         }
 
-        string json = JsonUtility.ToJson(saveData, true);
-        File.WriteAllText(Path.Combine(Application.persistentDataPath, saveFileName), json);
-        Debug.Log("Inventory saved at: " + Path.Combine(Application.persistentDataPath, saveFileName));
+        return items;
     }
 
-    public void LoadInventory()
+    public void LoadInventoryData(InventorySaveData saveData)
     {
-        string path = Path.Combine(Application.persistentDataPath, saveFileName);
-        if (!File.Exists(path)) return;
-
-        string json = File.ReadAllText(path);
-        InventorySaveData saveData = JsonUtility.FromJson<InventorySaveData>(json);
-
-        // Restore inventory
         pickedPickups = saveData.pickedPickups ?? new List<string>();
 
         slotGrid.itensInBag.Clear();
         slotGrid.grid = new int[slotGrid.maxGridX, slotGrid.maxGridY];
 
+        // Destroy any existing item slots
         TetrisItemSlot[] currentSlots = FindObjectsOfType<TetrisItemSlot>();
         foreach (var s in currentSlots)
             Destroy(s.gameObject);
@@ -74,44 +156,25 @@ public class InventoryManager : MonoBehaviour
             TetrisItem itemSO = GetItemSOFromID(itemData.itemID);
             if (itemSO == null) continue;
 
-            // Instantiate slot
             TetrisItemSlot newSlot = Instantiate(slotGrid.prefabSlot, slotGrid.transform);
             newSlot.item = itemSO;
             newSlot.startPosition = itemData.position;
             newSlot.currentStack = itemData.stackCount;
             newSlot.icon.sprite = itemSO.itemIcon;
 
-            // Set rect transform
             RectTransform rt = newSlot.GetComponent<RectTransform>();
             rt.anchorMin = new Vector2(0f, 1f);
             rt.anchorMax = new Vector2(0f, 1f);
             rt.localScale = Vector3.one;
             rt.anchoredPosition = new Vector2(newSlot.startPosition.x * 34f, -newSlot.startPosition.y * 34f);
 
-            // Update UI
             newSlot.UpdateStackUI();
-
-            // Mark occupied slots in the grid
-            List<Vector2> occupiedPositions = new List<Vector2>();
-            for (int y = 0; y < newSlot.item.itemSize.y; y++)
-            {
-                for (int x = 0; x < newSlot.item.itemSize.x; x++)
-                {
-                    Vector2 pos = new Vector2(newSlot.startPosition.x + x, newSlot.startPosition.y + y);
-                    occupiedPositions.Add(pos);
-                    slotGrid.grid[(int)pos.x, (int)pos.y] = 1;
-                }
-            }
-
             slotGrid.itensInBag.Add(newSlot);
         }
 
-        // Remove collected pickups from scene
         RemovePickedUpObjects();
     }
-    #endregion
 
-    #region Helpers
     public void AddPickedUp(string id)
     {
         if (!pickedPickups.Contains(id))
@@ -137,5 +200,6 @@ public class InventoryManager : MonoBehaviour
         }
         return null;
     }
+
     #endregion
 }

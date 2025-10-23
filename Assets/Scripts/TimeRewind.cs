@@ -24,11 +24,11 @@ public class TimeRewind : MonoBehaviour
     public float recordInterval = 0.1f; // Frequency of state recording
 
     private float recordTimer;
-    private PlayerController playerController;
+ 
 
     void Start()
     {
-        playerController = GetComponent<PlayerController>();
+        
     }
 
     void Update()
@@ -52,10 +52,7 @@ public class TimeRewind : MonoBehaviour
 
     public void StartRewind()
     {
-        if (playerController != null)
-        {
-            //playerController.DisableMovement();
-        }
+        
         StartCoroutine(RewindCoroutine());
     }
 
@@ -74,9 +71,6 @@ public class TimeRewind : MonoBehaviour
             yield return new WaitForFixedUpdate(); // Sync with physics update
         }
 
-        if (playerController != null)
-        {
-            //playerController.EnableMovement();
-        }
+   
     }
 }

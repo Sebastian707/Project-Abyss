@@ -6,6 +6,7 @@ public class PauseScript : MonoBehaviour
     public GameObject pauseScreen;
     public PlayerController playerController;
     public KeyCode pauseKey = KeyCode.Escape;
+    private Rigidbody playerRigidbody;
 
 
     private VideoPlayer[] allVideoPlayers;
@@ -17,6 +18,7 @@ public class PauseScript : MonoBehaviour
 
         // find all VideoPlayers in the scene (or cache specific ones if you want)
         allVideoPlayers = FindObjectsOfType<VideoPlayer>();
+        playerRigidbody = playerController.GetComponent<Rigidbody>();
     }
 
     private void Awake()
@@ -30,6 +32,7 @@ public class PauseScript : MonoBehaviour
         if (Time.timeScale == 0) return;
         if (Input.GetKeyDown(pauseKey))
         {
+            playerRigidbody.isKinematic = true;
             Time.timeScale = 0;
             pauseScreen.SetActive(true);
             playerController.DisableMovement();

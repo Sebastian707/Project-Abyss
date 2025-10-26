@@ -7,11 +7,14 @@ public class UnpauseButtonScript : MonoBehaviour
     public KeyCode unpauseKey = KeyCode.Escape;
     GameObject pauseScreen;
     private VideoPlayer[] allVideoPlayers;
+    private Rigidbody playerRigidbody;
 
     private void Awake()
     {
         pauseScreen = GameObject.Find("PauseScreen");
         allVideoPlayers = FindObjectsOfType<VideoPlayer>();
+            playerRigidbody = playerController.GetComponent<Rigidbody>();
+
     }
 
     private void Update()
@@ -25,15 +28,14 @@ public class UnpauseButtonScript : MonoBehaviour
     public void Unpause()
     {
         Time.timeScale = 1;
+        playerRigidbody.isKinematic = false;
         pauseScreen.SetActive(false);
         playerController.EnableMovement();
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 
-        // resume all video players
         foreach (VideoPlayer vp in allVideoPlayers)
         {
-            // only resume if paused
             if (vp.isPaused) vp.Play();
         }
     }

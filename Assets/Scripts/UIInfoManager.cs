@@ -1,10 +1,10 @@
 using UnityEngine;
 using TMPro;
 
-public class UIDoorManager : MonoBehaviour
+public class UIInfoManager : MonoBehaviour
 {
 
-    public static UIDoorManager Instance;
+    public static UIInfoManager Instance;
 
     [Header("UI References")]
     public TextMeshProUGUI messageText;

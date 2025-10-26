@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 using Unity;
+using System.Collections;
 
 public class DoorLock : Interactable
 {
@@ -9,10 +10,15 @@ public class DoorLock : Interactable
     [SerializeField] private bool isLocked = true;
     private bool doorOpen;
     public AudioClip DoorSound;
+    public AudioClip DoorLockedSound;
     private AudioSource audioSource;
 
     private TetrisSlot playerSlot;
     private NavMeshObstacle obstacle;
+
+    [SerializeField] private float jiggleAmount = 5f;
+    [SerializeField] private float jiggleDuration = 0.1f;
+    private bool isJiggling = false;
 
     void Start()
     {
@@ -52,7 +58,9 @@ public class DoorLock : Interactable
             }
         }
 
-        UIDoorManager.Instance.ShowMessage("Access Denied: Missing key with ID: " + requiredKeyID);
+        UIInfoManager.Instance.ShowMessage("Access Denied: Missing key with ID: " + requiredKeyID);
+        audioSource.PlayOneShot(DoorLockedSound);
+        StartCoroutine(JiggleDoor());
     }
 
     private void UnlockDoor()
@@ -60,7 +68,7 @@ public class DoorLock : Interactable
         if (!isLocked) return;
 
         isLocked = false;
-        UIDoorManager.Instance.ShowMessage("Access Granted! Correct key found.");
+        UIInfoManager.Instance.ShowMessage("Access Granted! Correct key found.");
 
         ToggleDoor();
     }
@@ -81,6 +89,27 @@ public class DoorLock : Interactable
             obstacle.enabled = !doorOpen;
 
         string message = doorOpen ? "Door opened." : "Door closed.";
-        UIDoorManager.Instance.ShowMessage(message);
+        UIInfoManager.Instance.ShowMessage(message);
+    }
+
+    private IEnumerator JiggleDoor()
+    {
+        if (isJiggling || doorToUnlock == null) yield break;
+        isJiggling = true;
+
+        Transform doorTransform = doorToUnlock.transform;
+        Quaternion originalRot = doorTransform.localRotation;
+
+        float elapsed = 0f;
+        while (elapsed < jiggleDuration)
+        {
+            elapsed += Time.deltaTime;
+            float strength = Mathf.Sin(elapsed * 40f) * jiggleAmount;
+            doorTransform.localRotation = originalRot * Quaternion.Euler(0f, strength, 0f);
+            yield return null;
+        }
+
+        doorTransform.localRotation = originalRot;
+        isJiggling = false;
     }
 }

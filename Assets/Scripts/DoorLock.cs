@@ -11,6 +11,7 @@ public class DoorLock : Interactable
     private bool doorOpen;
     public AudioClip DoorSound;
     public AudioClip DoorLockedSound;
+    public AudioClip DoorUnlockClick;
     private AudioSource audioSource;
 
     private TetrisSlot playerSlot;
@@ -67,10 +68,18 @@ public class DoorLock : Interactable
     {
         if (!isLocked) return;
 
-        isLocked = false;
-        UIInfoManager.Instance.ShowMessage("Access Granted! Correct key found.");
+        if (isLocked)
+        {
+            isLocked = false;
+            audioSource.PlayOneShot(DoorUnlockClick);
+            UIInfoManager.Instance.ShowMessage("Correct key found");
+        }
+        else
+        {
+            ToggleDoor();
+        }
 
-        ToggleDoor();
+            
     }
 
     private void ToggleDoor()

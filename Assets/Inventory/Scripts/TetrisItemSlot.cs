@@ -16,6 +16,9 @@ public class TetrisItemSlot : MonoBehaviour,
     public Image icon;
     private bool isDragging = false;
 
+    [Header("Rotation Settings")]
+    private bool isRotated = false;
+    private Vector2 currentItemSize; // Local copy of item size
 
     [Header("Stack Settings")]
     public TMP_Text stackCountText; // assigned in prefab
@@ -31,15 +34,18 @@ public class TetrisItemSlot : MonoBehaviour,
 
     void Start()
     {
+        // Store a local copy of the item size (don't modify ScriptableObject!)
+        currentItemSize = item.itemSize;
+
         // --- Rescale item visuals ---
         RescaleItem();
 
         slots = FindObjectOfType<TetrisSlot>();
 
         // Mark occupied grid cells based on item size
-        for (int y = 0; y < item.itemSize.y; y++)
+        for (int y = 0; y < currentItemSize.y; y++)
         {
-            for (int x = 0; x < item.itemSize.x; x++)
+            for (int x = 0; x < currentItemSize.x; x++)
             {
                 int gx = (int)(startPosition.x + x);
                 int gy = (int)(startPosition.y + y);
@@ -52,27 +58,72 @@ public class TetrisItemSlot : MonoBehaviour,
         UpdateStackUI();
     }
 
+    void Update()
+    {
+        // Check for R key press during drag
+        if (isDragging && Input.GetKeyDown(KeyCode.R))
+        {
+            RotateItem();
+        }
+    }
+
+    void RotateItem()
+    {
+        // Swap X and Y dimensions locally
+        currentItemSize = new Vector2(currentItemSize.y, currentItemSize.x);
+        isRotated = !isRotated;
+
+        // Just call RescaleItem, which now handles everything
+        RescaleItem();
+    }
+
     void RescaleItem()
     {
         RectTransform rt = GetComponent<RectTransform>();
-        rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, item.itemSize.y * size.y);
-        rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, item.itemSize.x * size.x);
+        float width = currentItemSize.x * size.x;
+        float height = currentItemSize.y * size.y;
 
+        // Resize the slot container
+        rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+        rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height);
+
+        // Resize all children except the icon (we handle separately)
         foreach (RectTransform child in transform)
         {
-            child.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, item.itemSize.y * child.rect.height);
-            child.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, item.itemSize.x * child.rect.width);
+            if (icon != null && child == icon.rectTransform)
+                continue;
 
-            foreach (RectTransform iconChild in child)
+            child.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+            child.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height);
+        }
+
+        // --- ICON HANDLING ---
+        if (icon != null)
+        {
+            RectTransform iconRT = icon.GetComponent<RectTransform>();
+
+            // Always use a centered pivot and no anchors (so it rotates correctly)
+            iconRT.anchorMin = new Vector2(0.5f, 0.5f);
+            iconRT.anchorMax = new Vector2(0.5f, 0.5f);
+            iconRT.pivot = new Vector2(0.5f, 0.5f);
+            iconRT.anchoredPosition = Vector2.zero;
+
+            // Apply correct size and rotation based on state
+            if (isRotated)
             {
-                iconChild.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, item.itemSize.y * iconChild.rect.height);
-                iconChild.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, item.itemSize.x * iconChild.rect.width);
-                iconChild.localPosition = new Vector2(
-                    child.localPosition.x + child.rect.width / 2,
-                    child.localPosition.y - child.rect.height / 2);
+                iconRT.sizeDelta = new Vector2(rt.rect.height, rt.rect.width);
+                iconRT.localRotation = Quaternion.Euler(0, 0, 90f);
             }
+            else
+            {
+                iconRT.sizeDelta = new Vector2(rt.rect.width, rt.rect.height);
+                iconRT.localRotation = Quaternion.identity;
+            }
+
+            iconRT.localScale = Vector3.one;
         }
     }
+
 
     public void UpdateStackUI()
     {
@@ -121,21 +172,32 @@ public class TetrisItemSlot : MonoBehaviour,
     #region Drag Handlers
     public void OnBeginDrag(PointerEventData eventData)
     {
+        isDragging = true;
         oldPosition = GetComponent<RectTransform>().anchoredPosition;
         GetComponent<CanvasGroup>().blocksRaycasts = false;
+
+        // 🔥 Move to top of hierarchy (renders above all other UI)
+        transform.SetAsLastSibling();
+
+        // Clear grid when starting drag
+        for (int y = 0; y < currentItemSize.y; y++)
+            for (int x = 0; x < currentItemSize.x; x++)
+            {
+                int gx = (int)startPosition.x + x;
+                int gy = (int)startPosition.y + y;
+                if (gx >= 0 && gx < slots.maxGridX && gy >= 0 && gy < slots.maxGridY)
+                    slots.grid[gx, gy] = 0;
+            }
     }
 
     public void OnDrag(PointerEventData eventData)
     {
         transform.position = eventData.position;
-        // Temporarily clear occupied grid
-        for (int y = 0; y < item.itemSize.y; y++)
-            for (int x = 0; x < item.itemSize.x; x++)
-                slots.grid[(int)startPosition.x + x, (int)startPosition.y + y] = 0;
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
+        isDragging = false;
         GetComponent<CanvasGroup>().blocksRaycasts = true;
 
         if (EventSystem.current.IsPointerOverGameObject())
@@ -145,16 +207,16 @@ public class TetrisItemSlot : MonoBehaviour,
             finalSlot.x = Mathf.Floor(finalPos.x / size.x);
             finalSlot.y = Mathf.Floor(-finalPos.y / size.y);
 
-            if (((int)finalSlot.x + (int)item.itemSize.x - 1) < slots.maxGridX &&
-                ((int)finalSlot.y + (int)item.itemSize.y - 1) < slots.maxGridY &&
+            if (((int)finalSlot.x + (int)currentItemSize.x - 1) < slots.maxGridX &&
+                ((int)finalSlot.y + (int)currentItemSize.y - 1) < slots.maxGridY &&
                 (finalSlot.x >= 0 && finalSlot.y >= 0))
             {
                 List<Vector2> newPosItem = new List<Vector2>();
                 bool fit = false;
 
-                for (int y = 0; y < item.itemSize.y; y++)
+                for (int y = 0; y < currentItemSize.y; y++)
                 {
-                    for (int x = 0; x < item.itemSize.x; x++)
+                    for (int x = 0; x < currentItemSize.x; x++)
                     {
                         int gridX = (int)finalSlot.x + x;
                         int gridY = (int)finalSlot.y + y;
@@ -167,21 +229,16 @@ public class TetrisItemSlot : MonoBehaviour,
                         else
                         {
                             fit = false;
-                            transform.GetComponent<RectTransform>().anchoredPosition = oldPosition;
+                            RevertRotationAndPosition();
                             newPosItem.Clear();
-                            x = (int)item.itemSize.x;
-                            y = (int)item.itemSize.y;
+                            x = (int)currentItemSize.x;
+                            y = (int)currentItemSize.y;
                         }
                     }
                 }
 
                 if (fit)
                 {
-                    // Clear old grid
-                    for (int y = 0; y < item.itemSize.y; y++)
-                        for (int x = 0; x < item.itemSize.x; x++)
-                            slots.grid[(int)startPosition.x + x, (int)startPosition.y + y] = 0;
-
                     // Mark new grid
                     foreach (Vector2 pos in newPosItem)
                         slots.grid[(int)pos.x, (int)pos.y] = 1;
@@ -192,21 +249,63 @@ public class TetrisItemSlot : MonoBehaviour,
                 }
                 else
                 {
-                    // Re-mark old grid (fixed bug here)
-                    for (int y = 0; y < item.itemSize.y; y++)
-                        for (int x = 0; x < item.itemSize.x; x++)
-                            slots.grid[(int)startPosition.x + x, (int)startPosition.y + y] = 1;
+                    // Re-mark old grid
+                    for (int y = 0; y < currentItemSize.y; y++)
+                        for (int x = 0; x < currentItemSize.x; x++)
+                        {
+                            int gx = (int)startPosition.x + x;
+                            int gy = (int)startPosition.y + y;
+                            if (gx >= 0 && gx < slots.maxGridX && gy >= 0 && gy < slots.maxGridY)
+                                slots.grid[gx, gy] = 1;
+                        }
                 }
             }
             else
             {
-                transform.GetComponent<RectTransform>().anchoredPosition = oldPosition;
+                RevertRotationAndPosition();
             }
         }
         else
         {
+            // Reset rotation before dropping outside
+            currentItemSize = item.itemSize;
+            isRotated = false;
+            if (icon != null)
+            {
+                RectTransform iconRT = icon.GetComponent<RectTransform>();
+                iconRT.localRotation = Quaternion.identity;
+            }
+
             DropOutsideInventory();
         }
+    }
+
+    void RevertRotationAndPosition()
+    {
+        // Revert to original rotation if placement failed
+        if (isRotated)
+        {
+            currentItemSize = item.itemSize;
+            isRotated = false;
+            if (icon != null)
+            {
+                RectTransform iconRT = icon.GetComponent<RectTransform>();
+                iconRT.localRotation = Quaternion.identity;
+            }
+            RescaleItem();
+        }
+
+        transform.GetComponent<RectTransform>().anchoredPosition = oldPosition;
+
+        // Re-mark original grid position
+        for (int y = 0; y < currentItemSize.y; y++)
+            for (int x = 0; x < currentItemSize.x; x++)
+            {
+                int gx = (int)startPosition.x + x;
+                int gy = (int)startPosition.y + y;
+                if (gx >= 0 && gx < slots.maxGridX && gy >= 0 && gy < slots.maxGridY)
+                    slots.grid[gx, gy] = 1;
+            }
     }
 
     void DropOutsideInventory()
@@ -222,6 +321,17 @@ public class TetrisItemSlot : MonoBehaviour,
                     new Vector2(player.transform.position.x + Random.Range(-1.5f, 1.5f),
                                 player.transform.position.y + Random.Range(-1.5f, 1.5f)),
                     Quaternion.identity);
+
+                // Clear grid before destroying
+                for (int y = 0; y < currentItemSize.y; y++)
+                    for (int x = 0; x < currentItemSize.x; x++)
+                    {
+                        int gx = (int)startPosition.x + x;
+                        int gy = (int)startPosition.y + y;
+                        if (gx >= 0 && gx < slots.maxGridX && gy >= 0 && gy < slots.maxGridY)
+                            slots.grid[gx, gy] = 0;
+                    }
+
                 Destroy(this.gameObject);
                 break;
             }
@@ -251,6 +361,16 @@ public class TetrisItemSlot : MonoBehaviour,
             }
             else
             {
+                // Clear grid before destroying
+                for (int y = 0; y < droppedSlot.currentItemSize.y; y++)
+                    for (int x = 0; x < droppedSlot.currentItemSize.x; x++)
+                    {
+                        int gx = (int)droppedSlot.startPosition.x + x;
+                        int gy = (int)droppedSlot.startPosition.y + y;
+                        if (gx >= 0 && gx < slots.maxGridX && gy >= 0 && gy < slots.maxGridY)
+                            slots.grid[gx, gy] = 0;
+                    }
+
                 // fully merged, destroy dropped slot
                 Destroy(droppedSlot.gameObject);
             }
@@ -269,8 +389,8 @@ public class TetrisItemSlot : MonoBehaviour,
 
             if (currentStack <= 0)
             {
-                for (int y = 0; y < item.itemSize.y; y++)
-                    for (int x = 0; x < item.itemSize.x; x++)
+                for (int y = 0; y < currentItemSize.y; y++)
+                    for (int x = 0; x < currentItemSize.x; x++)
                         slots.grid[(int)startPosition.x + x, (int)startPosition.y + y] = 0;
 
                 Destroy(this.gameObject);
@@ -288,6 +408,4 @@ public class TetrisItemSlot : MonoBehaviour,
         }
     }
     #endregion
-
-
 }

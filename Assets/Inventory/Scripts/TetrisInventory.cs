@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class TetrisInventory : MonoBehaviour
 {
-    //Responsible for having just one inventory in the scene.
+    // Responsible for having just one inventory in the scene.
     #region Singleton
     public static TetrisInventory instanceTetris;
 
@@ -17,9 +17,35 @@ public class TetrisInventory : MonoBehaviour
         }
         instanceTetris = this;
     }
-    
     #endregion
 
-    public int numberSlots; // starts with one + the number you put.
+    [SerializeField]
+    public int numberSlots = 1; // Default value
 
+    // Property to handle changes
+    public int NumberSlots
+    {
+        get => numberSlots;
+        set
+        {
+            if (numberSlots != value)
+            {
+                numberSlots = Mathf.Max(1, value); // Ensure at least 1 slot
+                UpdateInventorySlots();
+            }
+        }
+    }
+
+    // This method runs when number of slots changes
+    private void UpdateInventorySlots()
+    {
+        Debug.Log("Inventory slots updated to: " + numberSlots);
+        // TODO: Add your logic here to handle UI or other slot-related changes
+    }
+
+    // Optional: updates when changing in the inspector
+    private void OnValidate()
+    {
+        NumberSlots = numberSlots;
+    }
 }

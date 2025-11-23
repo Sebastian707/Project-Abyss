@@ -59,7 +59,6 @@ public class DoorLock : Interactable
             }
         }
 
-        UIInfoManager.Instance.ShowMessage("Access Denied: Missing key with ID: " + requiredKeyID);
         audioSource.PlayOneShot(DoorLockedSound);
         StartCoroutine(JiggleDoor());
     }
@@ -72,7 +71,6 @@ public class DoorLock : Interactable
         {
             isLocked = false;
             audioSource.PlayOneShot(DoorUnlockClick);
-            UIInfoManager.Instance.ShowMessage("Correct key found");
         }
         else
         {
@@ -97,7 +95,7 @@ public class DoorLock : Interactable
         if (obstacle != null)
             obstacle.enabled = !doorOpen;
 
-        string message = doorOpen ? "Door opened." : "Door closed.";
+        string message = doorOpen ? "" : "";
         UIInfoManager.Instance.ShowMessage(message);
     }
 
@@ -121,4 +119,20 @@ public class DoorLock : Interactable
         doorTransform.localRotation = originalRot;
         isJiggling = false;
     }
+
+    public void CloseAndLock()
+    {
+        if (doorToUnlock == null) return;
+
+        doorOpen = false;
+        isLocked = true; // lock the door so the player can’t go back
+        doorToUnlock.GetComponent<Animator>().SetBool("IsOpen", false);
+
+        if (obstacle != null)
+            obstacle.enabled = true;
+
+        audioSource.PlayOneShot(DoorSound);
+
+    }
+
 }

@@ -35,7 +35,7 @@ public class PauseScript : MonoBehaviour
             playerRigidbody.isKinematic = true;
             Time.timeScale = 0;
             pauseScreen.SetActive(true);
-            playerController.DisableMovement();
+            //playerController.DisableMovement();
 
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;

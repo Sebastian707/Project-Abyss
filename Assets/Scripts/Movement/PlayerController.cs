@@ -119,6 +119,7 @@ public class PlayerController : MonoBehaviour
 
     void HandleRotation()
     {
+        if (Time.timeScale == 0) return;
         if (!canMove) return;
 
         rotationX += -Input.GetAxis("Mouse Y") * lookSpeed;

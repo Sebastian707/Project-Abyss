@@ -63,7 +63,7 @@ public class DoorLock : Interactable
         StartCoroutine(JiggleDoor());
     }
 
-    private void UnlockDoor()
+    public void UnlockDoor()
     {
         if (!isLocked) return;
 
@@ -80,7 +80,7 @@ public class DoorLock : Interactable
             
     }
 
-    private void ToggleDoor()
+    public void ToggleDoor()
     {
         if (doorToUnlock == null)
         {

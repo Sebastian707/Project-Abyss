@@ -14,6 +14,8 @@ public class HallwayEntryTrigger : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        Debug.Log($"doorBehind assigned? {doorBehind != null}");
+
         if (other.CompareTag("Player") && doorBehind != null)
         {
             // Close and lock the previous door

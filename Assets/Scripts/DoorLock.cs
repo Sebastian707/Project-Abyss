@@ -125,14 +125,14 @@ public class DoorLock : Interactable
         if (doorToUnlock == null) return;
 
         doorOpen = false;
-        isLocked = true; // lock the door so the player can’t go back
+        isLocked = true; // enforce lock
         doorToUnlock.GetComponent<Animator>().SetBool("IsOpen", false);
+        Debug.Log("the door is locked: isLocked=" + isLocked);
 
         if (obstacle != null)
             obstacle.enabled = true;
 
         audioSource.PlayOneShot(DoorSound);
-
     }
 
 }

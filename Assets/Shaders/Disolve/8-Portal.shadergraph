@@ -1276,8 +1276,8 @@
     "m_ObjectId": "5e8a88d8c5804b4a82d014fd00977dc5",
     "m_Title": "Make Twirl",
     "m_Position": {
-        "x": -2449.999755859375,
-        "y": -362.0000305175781
+        "x": -2450.0,
+        "y": -362.0
     }
 }
 
@@ -1329,8 +1329,8 @@
     "m_ObjectId": "6356a8900c03451987c3dff81f0ce83c",
     "m_Title": "Rotate Twirl with Time",
     "m_Position": {
-        "x": -1310.9998779296875,
-        "y": -63.00006866455078
+        "x": -1311.0,
+        "y": -63.0
     }
 }
 
@@ -2828,7 +2828,7 @@
     "m_ObjectId": "efcfd89a2dfb41a39c5de011e2bac4af",
     "m_Title": "Rotate UV coords of the texture and add them with base color",
     "m_Position": {
-        "x": -695.9999389648438,
+        "x": -696.0,
         "y": -170.0
     }
 }
@@ -2839,8 +2839,8 @@
     "m_ObjectId": "f04536a12eac47a68f3ee619d5981bcc",
     "m_Title": "Calculate Noise Offset",
     "m_Position": {
-        "x": -2852.999755859375,
-        "y": 305.9998779296875
+        "x": -2853.0,
+        "y": 306.0
     }
 }
 

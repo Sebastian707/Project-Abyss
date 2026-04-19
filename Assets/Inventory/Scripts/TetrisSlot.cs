@@ -32,28 +32,53 @@ public class TetrisSlot : MonoBehaviour
         playerInventory = FindObjectOfType<TetrisInventory>();
     }
 
-    /// <summary>
-    /// Adds a new item into the inventory grid or stacks with existing if possible.
-    /// Now supports items that give multiple stack counts when picked up (e.g. a box of bullets adds 17 units).
-    /// </summary>
+    public void ExpandGrid(int addX, int addY)
+    {
+        if (addX < 0 || addY < 0)
+        {
+            Debug.LogWarning("ExpandGrid: addX and addY must be >= 0.");
+            return;
+        }
+
+        if (addX == 0 && addY == 0)
+            return;
+
+        int oldMaxX = maxGridX;
+        int oldMaxY = maxGridY;
+        int newMaxX = maxGridX + addX;
+        int newMaxY = maxGridY + addY;
+
+        int[,] newGrid = new int[newMaxX, newMaxY];
+        for (int x = 0; x < oldMaxX; x++)
+            for (int y = 0; y < oldMaxY; y++)
+                newGrid[x, y] = grid[x, y];
+
+        grid = newGrid;
+        maxGridX = newMaxX;
+        maxGridY = newMaxY;
+
+        if (TetrisUI.instanceUI != null)
+            TetrisUI.instanceUI.AddSlots(oldMaxX, oldMaxY, newMaxX, newMaxY);
+        else
+            Debug.LogWarning("ExpandGrid: No TetrisUI instance found.");
+
+        Debug.Log($"Inventory expanded to {maxGridX}x{maxGridY}.");
+    }
+
     public bool addInFirstSpace(TetrisItem item)
     {
-        // 🆕 Determine how many units this pickup represents
-        int amountToAdd = Mathf.Max(1, item.amountOnPickup); // default 1 if not set
+        int amountToAdd = Mathf.Max(1, item.amountOnPickup);
 
-        // 1️⃣ Try stacking first
+        // 1. Try stacking first
         foreach (TetrisItemSlot existingSlot in itensInBag)
         {
             if (existingSlot.CanStackWith(item))
             {
                 int spaceLeft = item.MaxStackSize - existingSlot.currentStack;
-
-                // Fill as much as possible into this existing stack
                 int amountUsed = Mathf.Min(amountToAdd, spaceLeft);
                 existingSlot.AddToStack(amountUsed);
                 amountToAdd -= amountUsed;
 
-                // If we fully used up the pickup, stop here
                 if (amountToAdd <= 0)
                 {
                     Debug.Log($"Stacked {item.itemName}. New count: {existingSlot.currentStack}");
@@ -62,7 +87,7 @@ public class TetrisSlot : MonoBehaviour
             }
         }
 
-        // 2️⃣ If there’s still some leftover (like overflow bullets), create new stack(s)
+        // 2. Place remaining into new grid slots
         while (amountToAdd > 0)
         {
             int contX = (int)item.itemSize.x;
@@ -103,21 +128,23 @@ public class TetrisSlot : MonoBehaviour
                 return false;
             }
 
-            // Create a new slot
             TetrisItemSlot myItem = Instantiate(prefabSlot);
             myItem.startPosition = new Vector2(posItemNaBag[0].x, posItemNaBag[0].y);
             myItem.item = item;
             myItem.icon.sprite = item.itemIcon;
 
-            myItem.GetComponent<RectTransform>().anchoredPosition = Vector2.zero;
-            myItem.GetComponent<RectTransform>().anchorMax = new Vector2(0f, 1f);
-            myItem.GetComponent<RectTransform>().anchorMin = new Vector2(0f, 1f);
             myItem.transform.SetParent(this.GetComponent<RectTransform>(), false);
-            myItem.gameObject.transform.localScale = Vector3.one;
-            myItem.GetComponent<RectTransform>().anchoredPosition =
-                new Vector2(myItem.startPosition.x * cellSize.x, -myItem.startPosition.y * cellSize.y);
 
-            // Assign stack size to fill as much as possible
+            RectTransform rt = myItem.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0f, 1f);
+            rt.anchorMax = new Vector2(0f, 1f);
+            rt.pivot = new Vector2(0f, 1f);
+            rt.anchoredPosition = new Vector2(
+                myItem.startPosition.x * cellSize.x,
+               -myItem.startPosition.y * cellSize.y
+            );
+            rt.localScale = Vector3.one;
+
             int amountThisStack = Mathf.Min(amountToAdd, item.MaxStackSize);
             myItem.currentStack = amountThisStack;
             amountToAdd -= amountThisStack;
@@ -125,8 +152,12 @@ public class TetrisSlot : MonoBehaviour
             myItem.UpdateStackUI();
             itensInBag.Add(myItem);
 
+            // FIX: mark grid BEFORE clearing the list
             foreach (Vector2 pos in posItemNaBag)
+            {
                 grid[(int)pos.x, (int)pos.y] = 1;
+            }
+
 
             posItemNaBag.Clear();
         }

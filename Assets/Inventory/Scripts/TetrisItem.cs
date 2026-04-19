@@ -16,11 +16,14 @@ public class TetrisItem : ScriptableObject
     public Vector2 itemSize;
     public string rarity;
 
+    [Header("Economy")]
+    public int basePrice = 0;
+    public List<string> categories = new List<string>();
+
     [SerializeField]
     protected int att1;
     [SerializeField]
     protected Sprite att1_icon;
-
     public int getAtt1() => att1;
     public Sprite getAtt1Icon() => att1_icon;
 

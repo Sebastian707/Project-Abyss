@@ -1,13 +1,11 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
 public class TetrisInventory : MonoBehaviour
 {
     // Responsible for having just one inventory in the scene.
     #region Singleton
     public static TetrisInventory instanceTetris;
-
     void Awake()
     {
         if (instanceTetris != null)
@@ -18,34 +16,18 @@ public class TetrisInventory : MonoBehaviour
         instanceTetris = this;
     }
     #endregion
-
-    [SerializeField]
-    public int numberSlots = 1; // Default value
-
-    // Property to handle changes
-    public int NumberSlots
+    /// <summary>
+    /// Derived automatically from TetrisSlot's grid dimensions (maxGridX * maxGridY).
+    /// Do not set this manually — configure the grid size in TetrisSlot instead.
+    /// </summary>
+    public int numberSlots
     {
-        get => numberSlots;
-        set
+        get
         {
-            if (numberSlots != value)
-            {
-                numberSlots = Mathf.Max(1, value); // Ensure at least 1 slot
-                UpdateInventorySlots();
-            }
+            if (TetrisSlot.instanceSlot != null)
+                return TetrisSlot.instanceSlot.maxGridX * TetrisSlot.instanceSlot.maxGridY - 1;
+            Debug.LogWarning("TetrisSlot instance not found. Returning 0 for NumberSlots.");
+            return 0;
         }
-    }
-
-    // This method runs when number of slots changes
-    private void UpdateInventorySlots()
-    {
-        Debug.Log("Inventory slots updated to: " + numberSlots);
-        // TODO: Add your logic here to handle UI or other slot-related changes
-    }
-
-    // Optional: updates when changing in the inspector
-    private void OnValidate()
-    {
-        NumberSlots = numberSlots;
     }
 }

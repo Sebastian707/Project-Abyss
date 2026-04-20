@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 
 public class MerchantUI : MonoBehaviour
@@ -17,10 +18,14 @@ public class MerchantUI : MonoBehaviour
 
     private MerchantData _currentData;
 
+    // ------------------------------------------------------------------ //
+
     private void Start()
     {
         merchantPanel.SetActive(false);
     }
+
+    public bool IsOpen() => merchantPanel.activeSelf;
 
     public void OpenWith(MerchantData data)
     {
@@ -46,9 +51,11 @@ public class MerchantUI : MonoBehaviour
 
     public void Toggle()
     {
-        if (merchantPanel.activeSelf) Close();
+        if (IsOpen()) Close();
         else if (_currentData != null) OpenWith(_currentData);
     }
+
+    // ------------------------------------------------------------------ //
 
     private void PopulateList(MerchantData data)
     {
@@ -67,5 +74,8 @@ public class MerchantUI : MonoBehaviour
             else
                 Debug.LogError("[MerchantUI] slotPrefab is missing a MerchantSlotUI component.");
         }
+
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(scrollContent.GetComponent<RectTransform>());
     }
 }
